@@ -1,1 +1,780 @@
-# LinuxFilePermissions
+# BlockThroughPipe game
+      
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Sets the character encoding for the document to UTF-8, supporting a wide range of characters. -->
+    <!-- Defines the title that appears in the browser tab or window title bar. -->
+    <title>Flappy Bird - Progressive Difficulty</title>
+    <style>
+        /* Selects the main body element of the HTML page for styling. */
+        /* Removes default browser margins around the body. */
+        body {
+            margin: 0;
+            /* Uses Flexbox layout to easily center content horizontally and vertically. */
+            /* Centers content along the main axis (horizontally by default). */
+            display: flex;
+            justify-content: center;
+            /* Centers content along the cross axis (vertically by default). */
+            /* Makes the body take up the full height of the browser viewport. */
+            align-items: center;
+            height: 100vh;
+            /* Sets the background color of the page to a dark gray. */
+            /* Specifies the default font family for text content. */
+            background-color: #333;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Selects the container element that holds the game canvas and notes panel. */
+        /* Sets the positioning context for absolutely positioned child elements like the notes panel and game over screen. */
+        #game-container {
+            position: relative;
+        }
+
+        /* Styles the canvas element where the game is drawn. */
+        /* Sets the background color of the game area (changed to sky blue). */
+        canvas {
+            background-color: #87CEEB; /* Changed background for better contrast */
+            /* Adds a 2-pixel solid black border around the canvas. */
+            /* Ensures the canvas is treated as a block-level element (takes up its own line). */
+            border: 2px solid #000;
+            display: block;
+        }
+
+        /* Styles the panel intended for user notes, positioned next to the game. */
+        /* Allows precise positioning relative to the 'game-container'. */
+        #notes-panel {
+            position: absolute;
+            /* Positions the panel 260px to the right of the game container's right edge. */
+            /* Aligns the top of the notes panel with the top of the game container. */
+            right: -260px;
+            top: 0;
+            /* Sets the width of the notes panel. */
+            /* Sets the background color of the notes panel to a light gray. */
+            width: 250px;
+            background-color: #C8C8C8;
+            /* Adds space between the content and the border of the panel. */
+            /* Adds a 2-pixel solid black border around the notes panel. */
+            padding: 10px;
+            border: 2px solid #000;
+        }
+
+        /* Styles the title text within the notes panel. */
+        /* Makes the notes title text bold. */
+        #notes-title {
+            font-weight: bold;
+            /* Adds some space below the notes title. */
+            margin-bottom: 10px;
+        }
+
+        /* Styles the area where individual notes are displayed. */
+        /* Adds space below the list of notes, before the input field. */
+        #notes-list {
+            margin-bottom: 10px;
+            /* Ensures the list area has at least 100px height even when empty. */
+            /* Adds a vertical scrollbar if the content exceeds the max-height. */
+            min-height: 100px;
+            overflow-y: auto; /* Added scroll for many notes */
+            /* Limits the maximum height of the notes list to 150px. */
+            /* Allows long words in notes to break and wrap to the next line. */
+            max-height: 150px; /* Limit height */
+            word-wrap: break-word; /* Wrap long notes */
+        }
+
+        /* Styles the text input field for adding new notes. */
+        /* Sets the width to fill the container, accounting for padding/border using calc(). */
+        #note-input {
+            width: calc(100% - 10px); /* Adjust width for padding/border */
+            /* Adds space below the input field. */
+            /* Hides the input field by default (toggled by JavaScript). */
+            margin-bottom: 5px;
+            display: none;
+            /* Adds padding inside the input field for text. */
+            /* Ensures padding and border are included in the element's total width and height. */
+            padding: 3px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        /* Styles the text indicating controls for the notes panel. */
+        /* Adds space above the controls text. */
+        #controls {
+            margin-top: 10px;
+            /* Sets the font size for the controls text. */
+            font-size: 14px;
+        }
+
+        /* Styles the overlay screen shown when the game ends. */
+        /* Allows precise positioning relative to the 'game-container'. */
+        .game-over {
+            position: absolute;
+            /* Positions the top edge of the overlay at the vertical center of the container. */
+            /* Positions the left edge of the overlay at the horizontal center of the container. */
+            top: 50%;
+            left: 50%;
+            /* Moves the overlay back by half its own width and height to perfectly center it. */
+            /* Centers the text content within the overlay. */
+            transform: translate(-50%, -50%);
+            text-align: center;
+            /* Sets a semi-transparent white background for the overlay. */
+            /* Adds padding inside the overlay box. */
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            /* Rounds the corners of the overlay box. */
+            /* Hides the game over screen by default. */
+            border-radius: 10px;
+            display: none;
+            /* Adds a border matching other elements. */
+            border: 2px solid #000;
+        }
+
+        /* Styles the main "GAME OVER" heading within the overlay. */
+        /* Sets the color of the heading text to red. */
+        .game-over h1 {
+            color: #FF0000;
+            /* Removes default margins from the heading. */
+            /* Sets the font size for the main game over text. */
+            margin: 0;
+            font-size: 48px;
+        }
+
+        /* Styles the elements used to display scores on the game over screen. */
+        /* Sets the font size for the score text. */
+        .score-display {
+            font-size: 24px;
+            /* Adds vertical margin around the score display elements. */
+            margin: 10px 0;
+        }
+
+        /* Styles the text prompting the user to restart. */
+        /* Sets the font size for the restart instruction. */
+        .restart {
+            font-size: 20px;
+            /* Adds space above the restart text. */
+            margin-top: 10px;
+        }
+
+        /* Styles the element displaying the current difficulty level. */
+        /* Allows positioning relative to the 'game-container'. */
+        .difficulty-meter {
+            position: absolute;
+            /* Positions the meter 10px from the bottom edge of the container. */
+            /* Positions the meter 10px from the left edge of the container. */
+            bottom: 10px;
+            left: 10px;
+            /* Sets the font size for the difficulty text. */
+            /* Sets the text color to black. */
+            font-size: 14px;
+            color: #000;
+            /* Adds a slightly transparent white background for better readability over the game. */
+            /* Adds small padding inside the meter display. */
+            background-color: rgba(255, 255, 255, 0.5); /* Slight background for visibility */
+            padding: 2px 5px;
+            /* Rounds the corners of the difficulty meter background. */
+        }
+             border-radius: 3px;
+    </style>
+</head>
+<body>
+    <!-- This div wraps the main game elements, providing a positioning context. -->
+    <div id="game-container">
+        <!-- The canvas element is where all the game graphics will be drawn using JavaScript. -->
+        <!-- Sets the logical width and height of the canvas drawing surface. -->
+        <canvas id="game" width="400" height="600"></canvas>
+
+        <!-- This div contains the UI for taking notes. -->
+        <div id="notes-panel">
+            <!-- The title for the notes section. -->
+            <div id="notes-title">Notes:</div>
+            <!-- This div will hold the list of notes entered by the user. -->
+            <div id="notes-list">
+                <!-- Initial instruction note on how to play. -->
+                <div>Press SPACE or CLICK to jump</div>
+                <!-- Initial instruction note about the game objective. -->
+                <div>Avoid the pipes!</div>
+                <!-- Initial note explaining scoring. -->
+                <div>Score increases after passing pipes.</div>
+                <!-- Initial note explaining difficulty progression. -->
+                <div>Difficulty increases every 5 points.</div>
+            </div>
+            <!-- Input field for the user to type a new note (initially hidden). -->
+            <input type="text" id="note-input" placeholder="Type your note...">
+            <!-- Displays instructions for interacting with the notes panel. -->
+            <div id="controls">
+                Press N to toggle notes | Enter to save
+            </div>
+        </div>
+
+        <!-- This div contains the content shown when the game is over (initially hidden). -->
+        <div class="game-over">
+            <!-- The main "GAME OVER" heading. -->
+            <h1>GAME OVER</h1>
+            <!-- Displays the player's score for the ended game. Content updated by JS. -->
+            <div class="score-display" id="final-score">Your Score: 0</div>
+            <!-- Displays the player's best score achieved so far. Content updated by JS. -->
+            <div class="score-display" id="best-score">Best Score: 0</div>
+            <!-- Instructs the player how to restart the game. -->
+            <div class="restart">Press R to restart</div>
+        </div>
+
+        <!-- Displays the current difficulty level during gameplay. Content updated by JS. -->
+        <div class="difficulty-meter" id="difficulty">Difficulty: 1/10</div>
+    </div>
+
+    <script>
+        // Get references to the HTML elements needed for the game logic.
+        const canvas = document.getElementById('game');
+        // Get the 2D rendering context for the canvas, allowing drawing operations.
+        const ctx = canvas.getContext('2d');
+        // Get references to the notes panel elements.
+        const notesList = document.getElementById('notes-list');
+        const noteInput = document.getElementById('note-input');
+        // Get a reference to the game over screen div.
+        const gameOverScreen = document.querySelector('.game-over');
+        // Get references to the score display elements on the game over screen.
+        const finalScoreDisplay = document.getElementById('final-score');
+        const bestScoreDisplay = document.getElementById('best-score');
+        // Get a reference to the difficulty meter display element.
+        const difficultyDisplay = document.getElementById('difficulty');
+
+        // Define constant game settings.
+        const PIPE_WIDTH = 60;      // *** ADDED THIS LINE *** Defines the width of the pipes in pixels.
+        // Sets the initial vertical gap between upper and lower pipes.
+        const BASE_PIPE_GAP = 200;
+        // Sets the initial horizontal speed at which pipes move towards the bird.
+        const BASE_PIPE_SPEED = 3;
+        // Defines the smallest possible gap between pipes as difficulty increases.
+        const MIN_PIPE_GAP = 100;
+        // Defines the fastest possible speed pipes can move.
+        const MAX_PIPE_SPEED = 6;
+        // Determines how many score points trigger a difficulty increase.
+        const DIFFICULTY_INTERVAL = 5;
+
+        // Defines the state and properties of the bird object.
+        const bird = {
+            x: 80, // Initial horizontal position (adjusted).
+            y: 300, // Initial vertical position.
+            width: 34, // Width of the bird's hitbox/drawing.
+            height: 24, // Height of the bird's hitbox/drawing.
+            velocity: 0, // Bird's current vertical speed (initially still).
+            gravity: 0.5, // Constant downward acceleration affecting velocity.
+            jumpForce: -9, // Negative velocity applied when the bird jumps (moves upwards).
+            color: '#FFDB58' // Color used to draw the bird (yellow).
+        };
+
+        // Initialize an empty array to hold all active pipe objects on screen.
+        let pipes = [];
+        // Initialize a counter to assign unique IDs to pairs of pipes for scoring logic.
+        let nextPipePairId = 0;
+        // Initialize a Set to keep track of pipe pair IDs that have already been scored.
+        let scoredPipes = new Set();
+        // Initialize the player's current score for this game session.
+        let score = 0;
+        // Retrieve the high score from browser's local storage, or default to 0 if none exists.
+        let highScore = localStorage.getItem('flappyBirdHighScore') || 0;
+        // Flag indicating if the game is currently in a 'game over' state.
+        let gameOver = false;
+        // Flag indicating if the notes input field is currently active/visible.
+        let notesActive = false;
+        // Variable to store the timestamp of the last frame for calculating delta time.
+        let lastTime = 0;
+        // Flag indicating if the main game update loop is running (starts after first jump).
+        let gameRunning = false;
+
+        // Variables to hold the current difficulty-adjusted pipe gap and speed.
+        let currentPipeGap = BASE_PIPE_GAP;
+        let currentPipeSpeed = BASE_PIPE_SPEED;
+        // Variable to track the current difficulty level (1-10).
+        let difficultyLevel = 1;
+
+        // This function sets up the initial game state.
+        function init() {
+            // Resets all game variables and bird/pipe states to their starting values.
+            resetGame();
+            // Performs the initial drawing of the game state (bird at start, scores, etc.).
+            render();
+            // Attaches event listeners for player input (keyboard, mouse clicks).
+            addEventListeners();
+            // Displays the best score saved in local storage right at the start.
+            updateBestScoreDisplay();
+             // Draw initial instructions onto the canvas.
+            ctx.fillStyle = '#000';
+            // Set font style for the instruction text.
+            ctx.font = '20px Arial';
+            // Center the text horizontally.
+            ctx.textAlign = 'center';
+            // Draw the instruction text slightly above the middle of the canvas.
+            ctx.fillText('Press SPACE or CLICK to start', canvas.width / 2, canvas.height / 2 - 20);
+            // Reset text alignment to default (left) for subsequent drawing.
+            ctx.textAlign = 'left';
+        }
+
+        // The main loop that drives the game's animation and logic, called repeatedly.
+        function gameLoop(timestamp) {
+            // If the game isn't actively running (pre-start or paused) or is over, exit the update/render part.
+            if (!gameRunning || gameOver) {
+                 // If not game over yet (just paused/pre-start), request the next frame to keep checking.
+                 if (!gameOver) requestAnimationFrame(gameLoop);
+                 // Stop executing the rest of the function for this frame.
+                 return;
+            }
+
+            // Calculate the time elapsed since the last frame in seconds. Useful for smooth, frame-rate independent movement (though not fully utilized here).
+            const deltaTime = (timestamp - lastTime) / 1000;
+            // Store the current timestamp for the next frame's calculation.
+            lastTime = timestamp;
+
+            // Update all game logic (bird movement, pipe movement, collisions, scoring).
+            update(deltaTime);
+            // Draw the updated game state onto the canvas.
+            render();
+
+            // Request the browser to call gameLoop again before the next screen repaint.
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Function to initiate the game loop when the player gives the first input.
+        function startGameLoop() {
+            // Only start if the game loop isn't already running.
+            if (!gameRunning) {
+                // Set the flag indicating the game logic is now active.
+                gameRunning = true;
+                // Record the starting time for the first frame's delta time calculation.
+                lastTime = performance.now();
+                // Make the first call to requestAnimationFrame to kick off the loop.
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // This function updates the state of all game objects frame by frame.
+        function update(deltaTime) {
+            // Apply gravity to the bird's vertical velocity.
+            bird.velocity += bird.gravity;
+            // Update the bird's vertical position based on its current velocity.
+            bird.y += bird.velocity;
+
+            // Check if new pipes need to be generated based on the position of the last pipe.
+            // Adds pipes if the last one is sufficiently far onto the screen, with some spacing randomness.
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250 - Math.random() * 50) {
+                // Call the function to create and add a new pair of pipes.
+                createPipePair();
+            }
+
+            // Iterate through all the pipes currently on screen.
+            let scoredThisFrame = false; // Flag to prevent issues if multiple pipes pass in one frame (unlikely here).
+            // Loop over each pipe in the `pipes` array.
+            for (let i = 0; i < pipes.length; i++) {
+                // Move the current pipe to the left based on the currentPipeSpeed.
+                pipes[i].x -= currentPipeSpeed;
+
+                // Check if the bird has successfully passed a pipe pair to increment the score.
+                // Score only when passing the top pipe of a pair (identified by isTop) to avoid double scoring.
+                if (pipes[i].isTop && // Check only top pipes
+                    bird.x > pipes[i].x + pipes[i].width && // Bird's center must be past the pipe's right edge.
+                    // Ensure this specific pipe pair hasn't already been scored.
+                    !scoredPipes.has(pipes[i].pairId)) {
+                    // Add the pair's ID to the set of scored pipes.
+                    scoredPipes.add(pipes[i].pairId);
+                    // Increment the score.
+                    score++;
+                    // Mark that a score happened this frame (not strictly necessary here but good practice).
+                    scoredThisFrame = true;
+
+                    // Check if the score is a multiple of the difficulty interval to increase difficulty.
+                    if (score > 0 && score % DIFFICULTY_INTERVAL === 0) {
+                        // Call the function to make the game harder.
+                        increaseDifficulty();
+                    }
+                }
+            }
+
+            // Remove pipes that have moved completely off the left side of the screen.
+            pipes = pipes.filter(pipe => pipe.x > -pipe.width);
+
+            // Check for collisions between the bird and pipes or screen boundaries.
+            if (checkCollisions()) {
+                // If a collision is detected, end the current game session.
+                endGame();
+            }
+        }
+
+        // This function increases the game's difficulty level and adjusts parameters.
+        function increaseDifficulty() {
+            // Increment the difficulty level, capping it at 10.
+            difficultyLevel = Math.min(10, difficultyLevel + 1);
+
+            // Calculate the new pipe gap size, making it smaller as difficulty increases (linear interpolation).
+            currentPipeGap = BASE_PIPE_GAP - ((difficultyLevel - 1) * (BASE_PIPE_GAP - MIN_PIPE_GAP) / 9);
+            // Ensure the pipe gap doesn't become smaller than the defined minimum.
+            currentPipeGap = Math.max(MIN_PIPE_GAP, currentPipeGap);
+
+            // Calculate the new pipe speed, making it faster as difficulty increases (linear interpolation).
+            currentPipeSpeed = BASE_PIPE_SPEED + ((difficultyLevel - 1) * (MAX_PIPE_SPEED - BASE_PIPE_SPEED) / 9);
+            // Ensure the pipe speed doesn't exceed the defined maximum.
+            currentPipeSpeed = Math.min(MAX_PIPE_SPEED, currentPipeSpeed);
+
+            // Update the text content of the difficulty meter display on the screen.
+            difficultyDisplay.textContent = `Difficulty: ${difficultyLevel}/10`;
+        }
+
+        // This function handles drawing all game elements onto the canvas.
+        function render() {
+            // Clear the entire canvas area to prepare for drawing the new frame.
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set the fill color for drawing the pipes (darker green).
+            ctx.fillStyle = '#008000';
+            // Iterate through each pipe object in the pipes array.
+            pipes.forEach(pipe => {
+                 // Draw a slightly larger rectangle behind the main pipe for a border/shadow effect.
+                ctx.fillStyle = '#006400'; // Darker shade for border
+                // Draw the border rectangle. Adjust coordinates/size based on whether it's a top or bottom pipe.
+                ctx.fillRect(pipe.x - 1, pipe.y - (pipe.isTop ? 0 : 1), pipe.width + 2, pipe.height + 2);
+                // Set the color back to the main pipe color.
+                ctx.fillStyle = '#008000';
+                // Draw the main rectangle for the current pipe.
+                ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+
+                 // Define the height of the decorative caps on the pipes.
+                const capHeight = 20;
+                // If it's a top pipe, draw the cap at its bottom edge.
+                if (pipe.isTop) {
+                     // Draw the cap rectangle slightly wider than the pipe.
+                     ctx.fillRect(pipe.x - 2, pipe.height - capHeight, pipe.width + 4, capHeight);
+                // If it's a bottom pipe, draw the cap at its top edge.
+                } else {
+                     // Draw the cap rectangle slightly wider than the pipe.
+                     ctx.fillRect(pipe.x - 2, pipe.y, pipe.width + 4, capHeight);
+                }
+            });
+
+
+            // Set the fill color for drawing the bird (using the color defined in the bird object).
+            ctx.fillStyle = bird.color;
+            // Calculate the top-left corner coordinates for drawing the bird rectangle, centered on bird.x, bird.y.
+            const birdDrawX = bird.x - bird.width / 2;
+            // Calculate the top-left Y coordinate.
+            const birdDrawY = bird.y - bird.height / 2;
+            // Draw the bird as a rectangle using the calculated coordinates and dimensions.
+            ctx.fillRect(birdDrawX, birdDrawY, bird.width, bird.height);
+
+            // Set the color for the bird's eye (black).
+            ctx.fillStyle = '#000';
+            // Begin drawing a path for the eye shape (a circle).
+            ctx.beginPath();
+            // Define the circle for the eye: center coordinates (relative to bird rectangle), radius, start/end angles.
+            ctx.arc(birdDrawX + bird.width * 0.7, birdDrawY + bird.height * 0.4, 3, 0, Math.PI * 2);
+            // Fill the defined circle path with the current fill color (black).
+            ctx.fill();
+
+
+            // Set the color for drawing text (score).
+            ctx.fillStyle = '#000';
+            // Set the font size and family for the score display.
+            ctx.font = '30px Arial';
+            // Draw the current score text near the top-left corner of the canvas.
+            ctx.fillText(`Score: ${score}`, 10, 40);
+
+            // Check if there is a high score recorded (greater than 0).
+             if (highScore > 0) {
+                // Set the font size and family for the best score display (smaller than current score).
+                ctx.font = '20px Arial';
+                // Draw the best score text below the current score.
+                ctx.fillText(`Best: ${highScore}`, 10, 70);
+             }
+        }
+
+        // Function responsible for creating a new pair of pipes (top and bottom).
+        function createPipePair() {
+            // Define minimum and maximum vertical positions for the *start* of the gap to prevent it being too high or low.
+            const minGapY = 80;
+            // Calculate the maximum Y position for the gap start.
+            const maxGapY = canvas.height - 80 - currentPipeGap;
+            // Calculate a random starting Y position for the gap within the allowed range.
+            const gapStart = Math.random() * (maxGapY - minGapY) + minGapY;
+
+            // Get the unique ID for this new pair of pipes and increment the counter for the next pair.
+            const pairId = nextPipePairId++;
+
+            // Create the top pipe object and add it to the pipes array.
+            pipes.push({
+                x: canvas.width, // Start the pipe just off the right edge of the canvas.
+                y: 0, // Top pipe starts at the top edge (y=0).
+                width: PIPE_WIDTH, // Use the defined constant for pipe width.
+                height: gapStart, // Height extends down to the calculated start of the gap.
+                pairId: pairId, // Assign the unique pair ID.
+                isTop: true // Mark this object as the top pipe of the pair.
+            });
+
+            // Create the bottom pipe object and add it to the pipes array.
+            pipes.push({
+                x: canvas.width, // Start the pipe at the same horizontal position as the top pipe.
+                y: gapStart + currentPipeGap, // Start the bottom pipe below the gap.
+                width: PIPE_WIDTH, // Use the defined constant for pipe width.
+                height: canvas.height - (gapStart + currentPipeGap), // Height extends to the bottom of the canvas.
+                pairId: pairId, // Assign the same unique pair ID.
+                isTop: false // Mark this object as the bottom pipe of the pair.
+            });
+        }
+
+        // Function to check for collisions using Axis-Aligned Bounding Box (AABB) method.
+        function checkCollisions() {
+            // Calculate the coordinates of the bird's bounding box edges based on its center and dimensions.
+            const birdTop = bird.y - bird.height / 2;
+            // Calculate the bottom edge Y coordinate.
+            const birdBottom = bird.y + bird.height / 2;
+            // Calculate the left edge X coordinate.
+            const birdLeft = bird.x - bird.width / 2;
+            // Calculate the right edge X coordinate.
+            const birdRight = bird.x + bird.width / 2;
+
+            // Check if the bird has hit the top or bottom edges of the canvas.
+            if (birdTop <= 0 || birdBottom >= canvas.height) {
+                // If it hits the boundary, a collision occurred.
+                return true;
+            }
+
+            // Iterate through each pipe currently on the screen to check for collision with the bird.
+            for (const pipe of pipes) {
+                // Get the coordinates of the current pipe's bounding box edges.
+                const pipeTop = pipe.y;
+                // Calculate the bottom edge Y coordinate.
+                const pipeBottom = pipe.y + pipe.height;
+                // Calculate the left edge X coordinate.
+                const pipeLeft = pipe.x;
+                // Calculate the right edge X coordinate.
+                const pipeRight = pipe.x + pipe.width;
+
+                // Perform the AABB collision check: true if the bird's box overlaps the pipe's box.
+                // Checks if bird's right is past pipe's left AND bird's left is before pipe's right (horizontal overlap).
+                if (birdRight > pipeLeft &&
+                    birdLeft < pipeRight &&
+                    // AND Checks if bird's bottom is below pipe's top AND bird's top is above pipe's bottom (vertical overlap).
+                    birdBottom > pipeTop &&
+                    birdTop < pipeBottom) {
+                    // If all conditions are true, the boxes overlap, indicating a collision.
+                    return true;
+                }
+            }
+
+            // If the loops complete without finding any collisions, return false.
+            return false;
+        }
+
+        // Function called when a collision occurs or the game ends.
+        function endGame() {
+            // Prevent this function from running multiple times if already game over.
+            if (gameOver) return;
+            // Set the game over flag to true.
+            gameOver = true;
+            // Stop the game logic loop from updating positions/physics.
+            gameRunning = false;
+
+            // Check if the current score is higher than the stored high score.
+            if (score > highScore) {
+                // If yes, update the high score variable.
+                highScore = score;
+                // Save the new high score to the browser's local storage for persistence.
+                localStorage.setItem('flappyBirdHighScore', highScore);
+            }
+
+            // Update the best score displayed on the game over screen.
+            updateBestScoreDisplay();
+            // Update the final score displayed on the game over screen with the current score.
+            finalScoreDisplay.textContent = `Your Score: ${score}`;
+            // Make the game over screen visible.
+            gameOverScreen.style.display = 'block';
+        }
+
+        // Helper function to update the best score text content in the HTML.
+        function updateBestScoreDisplay() {
+             // Sets the text content of the best score element using the current highScore variable.
+             bestScoreDisplay.textContent = `Best Score: ${highScore}`;
+        }
+
+
+        // Function to reset the game state to its initial values for a new game.
+        function resetGame() {
+            // Reset bird's vertical position and velocity.
+            bird.y = 300;
+            bird.velocity = 0;
+            // Clear the array of pipes.
+            pipes = [];
+            // Reset the pipe pair ID counter.
+            nextPipePairId = 0;
+            // Clear the set of scored pipe IDs.
+            scoredPipes.clear();
+            // Reset the current score to 0.
+            score = 0;
+            // Reset the game over flag.
+            gameOver = false;
+            // Reset the flag indicating if the game loop is active.
+            gameRunning = false;
+
+            // Reset difficulty parameters to their base values.
+            currentPipeGap = BASE_PIPE_GAP;
+            currentPipeSpeed = BASE_PIPE_SPEED;
+            // Reset the difficulty level display.
+            difficultyLevel = 1;
+            difficultyDisplay.textContent = `Difficulty: ${difficultyLevel}/10`;
+
+            // Hide the game over screen.
+            gameOverScreen.style.display = 'none';
+            // Clear the canvas completely.
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Redraw the initial state (bird at start, score 0, etc.).
+            render();
+            // Set text color and font for the starting instruction.
+            ctx.fillStyle = '#000';
+            ctx.font = '20px Arial';
+            // Center align the text.
+            ctx.textAlign = 'center';
+            // Draw the "Press SPACE or CLICK to start" message.
+            ctx.fillText('Press SPACE or CLICK to start', canvas.width / 2, canvas.height / 2 - 20);
+            // Reset text alignment for future drawing.
+            ctx.textAlign = 'left';
+        }
+
+        // Function to add a new note to the notes list.
+        function addNote() {
+            // Get the text from the note input field, removing leading/trailing whitespace.
+            const text = noteInput.value.trim();
+            // Proceed only if the trimmed text is not empty.
+            if (text !== '') {
+                // Create a new 'div' element to hold the note text.
+                const noteElement = document.createElement('div');
+                // Set the text content of the new div to the entered text.
+                noteElement.textContent = text;
+                // Append the new note div to the notes list container.
+                notesList.appendChild(noteElement);
+                // Clear the input field after adding the note.
+                noteInput.value = '';
+
+                 // Automatically scroll the notes list to the bottom to show the latest note.
+                notesList.scrollTop = notesList.scrollHeight;
+
+                // Optional: Limit the number of notes displayed by removing the oldest.
+                // while (notesList.children.length > 10) {
+                //     notesList.removeChild(notesList.firstChild);
+                // }
+            }
+             // Optionally close the notes panel after adding a note, or keep focus.
+            // toggleNotes(false);
+        }
+
+        // Function to handle the bird's jump action.
+        function birdJump() {
+             // If the game hasn't started yet (first jump), start the game loop.
+             if (!gameRunning && !gameOver) {
+                 // Call the function to initiate the main game loop.
+                 startGameLoop();
+             }
+             // If the game is not over, apply the jump force to the bird's velocity.
+             if (!gameOver) {
+                 // Set the bird's vertical velocity to the negative jump force (upward movement).
+                 bird.velocity = bird.jumpForce;
+             }
+        }
+
+        // Function to set up all necessary event listeners for user interaction.
+        function addEventListeners() {
+            // Listen for keydown events on the entire document.
+            document.addEventListener('keydown', (e) => {
+                // Check if the Space bar was pressed and the notes input is not active.
+                if (e.code === 'Space' && !notesActive) {
+                    // Trigger the bird's jump action.
+                    birdJump();
+                    // Prevent the default Space bar action (e.g., scrolling the page).
+                    e.preventDefault();
+                }
+
+                // Check if the 'R' key was pressed and the game is currently over.
+                if (e.key.toLowerCase() === 'r' && gameOver) {
+                    // Reset the game to start a new session.
+                    resetGame();
+                }
+
+                // Check if the 'N' key was pressed.
+                if (e.key.toLowerCase() === 'n') {
+                    // Toggle the visibility and state of the notes panel.
+                    toggleNotes();
+                    // Prevent typing 'n' into the input field if it's being opened.
+                    e.preventDefault();
+                }
+
+                // Check if the notes input field is active.
+                if (notesActive) {
+                     // If Enter key is pressed while notes are active.
+                     if (e.key === 'Enter') {
+                         // Add the note currently in the input field.
+                         addNote();
+                         // Prevent default Enter key behavior (like form submission).
+                         e.preventDefault();
+                     // If Escape key is pressed while notes are active.
+                     } else if (e.key === 'Escape') {
+                         // Close the notes panel without saving the current input.
+                         toggleNotes(false);
+                         // Prevent any default Escape key behavior.
+                         e.preventDefault();
+                     }
+                 }
+            });
+
+            // Listen for click events on the game canvas.
+            canvas.addEventListener('click', () => {
+                // Allow jumping via click only if notes are not active and game is not over.
+                if (!notesActive && !gameOver) {
+                    // Trigger the bird's jump action.
+                    birdJump();
+                }
+                // Optional: Uncomment to allow restarting the game by clicking when game is over.
+                // if (gameOver) {
+                //    resetGame();
+                // }
+            });
+
+            // Add a keydown listener specifically to the note input field.
+             noteInput.addEventListener('keydown', (e) => {
+                 // Stop the event from bubbling up to the document's keydown listener.
+                 // This prevents Space from jumping while typing in the notes field.
+                 e.stopPropagation();
+                 // If Escape is pressed within the input field.
+                 if (e.key === 'Escape') {
+                     // Close the notes panel.
+                     toggleNotes(false);
+                 // If Enter is pressed within the input field.
+                 } else if (e.key === 'Enter') {
+                     // Add the note from the input field.
+                     addNote();
+                 }
+             });
+        }
+
+        // Function to toggle the visibility and active state of the notes input panel.
+        function toggleNotes(show = !notesActive) { // Default action is to invert the current state.
+            // Update the notesActive flag based on the 'show' parameter.
+            notesActive = show;
+            // Set the display style of the note input field ('block' to show, 'none' to hide).
+            noteInput.style.display = show ? 'block' : 'none';
+
+            // If the notes panel is being shown.
+            if (show) {
+                // Set focus to the input field so the user can start typing immediately.
+                noteInput.focus();
+            // If the notes panel is being hidden.
+            } else {
+                // Optionally add any existing text as a note when closing (currently disabled).
+                // addNote();
+                // Clear the input field when hiding it.
+                noteInput.value = '';
+                // Give focus back to the canvas or body to re-enable space bar jump immediately.
+                canvas.focus(); // Or document.body.focus(); might be needed depending on browser behavior.
+            }
+        }
+
+        // Call the init function to set up the game when the script loads.
+        init();
+    </script>
+</body>
+</html>
+
+    
