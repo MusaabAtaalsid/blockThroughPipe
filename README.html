@@ -239,7 +239,7 @@
         const PIPE_WIDTH = 60;      // *** ADDED THIS LINE *** Defines the width of the pipes in pixels.
         // Sets the initial vertical gap between upper and lower pipes.
         const BASE_PIPE_GAP = 200;
-        // Sets the initial horizontal speed at which pipes move towards the bird.
+        // Sets the initial horizontal speed at which pipes move towards the block.
         const BASE_PIPE_SPEED = 3;
         // Defines the smallest possible gap between pipes as difficulty increases.
         const MIN_PIPE_GAP = 100;
@@ -248,16 +248,16 @@
         // Determines how many score points trigger a difficulty increase.
         const DIFFICULTY_INTERVAL = 5;
 
-        // Defines the state and properties of the bird object.
-        const bird = {
+        // Defines the state and properties of the block object.
+        const block = {
             x: 80, // Initial horizontal position (adjusted).
             y: 300, // Initial vertical position.
-            width: 34, // Width of the bird's hitbox/drawing.
-            height: 24, // Height of the bird's hitbox/drawing.
-            velocity: 0, // Bird's current vertical speed (initially still).
+            width: 34, // Width of the block's hitbox/drawing.
+            height: 24, // Height of the block's hitbox/drawing.
+            velocity: 0, // block's current vertical speed (initially still).
             gravity: 0.5, // Constant downward acceleration affecting velocity.
-            jumpForce: -9, // Negative velocity applied when the bird jumps (moves upwards).
-            color: '#FFDB58' // Color used to draw the bird (yellow).
+            jumpForce: -9, // Negative velocity applied when the block jumps (moves upwards).
+            color: '#FFDB58' // Color used to draw the block (yellow).
         };
 
         // Initialize an empty array to hold all active pipe objects on screen.
@@ -269,7 +269,7 @@
         // Initialize the player's current score for this game session.
         let score = 0;
         // Retrieve the high score from browser's local storage, or default to 0 if none exists.
-        let highScore = localStorage.getItem('flappyBirdHighScore') || 0;
+        let highScore = localStorage.getItem('flappyblockHighScore') || 0;
         // Flag indicating if the game is currently in a 'game over' state.
         let gameOver = false;
         // Flag indicating if the notes input field is currently active/visible.
@@ -287,9 +287,9 @@
 
         // This function sets up the initial game state.
         function init() {
-            // Resets all game variables and bird/pipe states to their starting values.
+            // Resets all game variables and block/pipe states to their starting values.
             resetGame();
-            // Performs the initial drawing of the game state (bird at start, scores, etc.).
+            // Performs the initial drawing of the game state (block at start, scores, etc.).
             render();
             // Attaches event listeners for player input (keyboard, mouse clicks).
             addEventListeners();
@@ -322,7 +322,7 @@
             // Store the current timestamp for the next frame's calculation.
             lastTime = timestamp;
 
-            // Update all game logic (bird movement, pipe movement, collisions, scoring).
+            // Update all game logic (block movement, pipe movement, collisions, scoring).
             update(deltaTime);
             // Draw the updated game state onto the canvas.
             render();
@@ -346,10 +346,10 @@
 
         // This function updates the state of all game objects frame by frame.
         function update(deltaTime) {
-            // Apply gravity to the bird's vertical velocity.
-            bird.velocity += bird.gravity;
-            // Update the bird's vertical position based on its current velocity.
-            bird.y += bird.velocity;
+            // Apply gravity to the block's vertical velocity.
+            block.velocity += block.gravity;
+            // Update the block's vertical position based on its current velocity.
+            block.y += block.velocity;
 
             // Check if new pipes need to be generated based on the position of the last pipe.
             // Adds pipes if the last one is sufficiently far onto the screen, with some spacing randomness.
@@ -365,10 +365,10 @@
                 // Move the current pipe to the left based on the currentPipeSpeed.
                 pipes[i].x -= currentPipeSpeed;
 
-                // Check if the bird has successfully passed a pipe pair to increment the score.
+                // Check if the block has successfully passed a pipe pair to increment the score.
                 // Score only when passing the top pipe of a pair (identified by isTop) to avoid double scoring.
                 if (pipes[i].isTop && // Check only top pipes
-                    bird.x > pipes[i].x + pipes[i].width && // Bird's center must be past the pipe's right edge.
+                    block.x > pipes[i].x + pipes[i].width && // block's center must be past the pipe's right edge.
                     // Ensure this specific pipe pair hasn't already been scored.
                     !scoredPipes.has(pipes[i].pairId)) {
                     // Add the pair's ID to the set of scored pipes.
@@ -389,7 +389,7 @@
             // Remove pipes that have moved completely off the left side of the screen.
             pipes = pipes.filter(pipe => pipe.x > -pipe.width);
 
-            // Check for collisions between the bird and pipes or screen boundaries.
+            // Check for collisions between the block and pipes or screen boundaries.
             if (checkCollisions()) {
                 // If a collision is detected, end the current game session.
                 endGame();
@@ -447,21 +447,21 @@
             });
 
 
-            // Set the fill color for drawing the bird (using the color defined in the bird object).
-            ctx.fillStyle = bird.color;
-            // Calculate the top-left corner coordinates for drawing the bird rectangle, centered on bird.x, bird.y.
-            const birdDrawX = bird.x - bird.width / 2;
+            // Set the fill color for drawing the block (using the color defined in the block object).
+            ctx.fillStyle = block.color;
+            // Calculate the top-left corner coordinates for drawing the block rectangle, centered on block.x, block.y.
+            const blockDrawX = block.x - block.width / 2;
             // Calculate the top-left Y coordinate.
-            const birdDrawY = bird.y - bird.height / 2;
-            // Draw the bird as a rectangle using the calculated coordinates and dimensions.
-            ctx.fillRect(birdDrawX, birdDrawY, bird.width, bird.height);
+            const blockDrawY = block.y - block.height / 2;
+            // Draw the block as a rectangle using the calculated coordinates and dimensions.
+            ctx.fillRect(blockDrawX, blockDrawY, block.width, block.height);
 
-            // Set the color for the bird's eye (black).
+            // Set the color for the block's eye (black).
             ctx.fillStyle = '#000';
             // Begin drawing a path for the eye shape (a circle).
             ctx.beginPath();
-            // Define the circle for the eye: center coordinates (relative to bird rectangle), radius, start/end angles.
-            ctx.arc(birdDrawX + bird.width * 0.7, birdDrawY + bird.height * 0.4, 3, 0, Math.PI * 2);
+            // Define the circle for the eye: center coordinates (relative to block rectangle), radius, start/end angles.
+            ctx.arc(blockDrawX + block.width * 0.7, blockDrawY + block.height * 0.4, 3, 0, Math.PI * 2);
             // Fill the defined circle path with the current fill color (black).
             ctx.fill();
 
@@ -517,22 +517,22 @@
 
         // Function to check for collisions using Axis-Aligned Bounding Box (AABB) method.
         function checkCollisions() {
-            // Calculate the coordinates of the bird's bounding box edges based on its center and dimensions.
-            const birdTop = bird.y - bird.height / 2;
+            // Calculate the coordinates of the block's bounding box edges based on its center and dimensions.
+            const blockTop = block.y - block.height / 2;
             // Calculate the bottom edge Y coordinate.
-            const birdBottom = bird.y + bird.height / 2;
+            const blockBottom = block.y + block.height / 2;
             // Calculate the left edge X coordinate.
-            const birdLeft = bird.x - bird.width / 2;
+            const blockLeft = block.x - block.width / 2;
             // Calculate the right edge X coordinate.
-            const birdRight = bird.x + bird.width / 2;
+            const blockRight = block.x + block.width / 2;
 
-            // Check if the bird has hit the top or bottom edges of the canvas.
-            if (birdTop <= 0 || birdBottom >= canvas.height) {
+            // Check if the block has hit the top or bottom edges of the canvas.
+            if (blockTop <= 0 || blockBottom >= canvas.height) {
                 // If it hits the boundary, a collision occurred.
                 return true;
             }
 
-            // Iterate through each pipe currently on the screen to check for collision with the bird.
+            // Iterate through each pipe currently on the screen to check for collision with the block.
             for (const pipe of pipes) {
                 // Get the coordinates of the current pipe's bounding box edges.
                 const pipeTop = pipe.y;
@@ -543,13 +543,13 @@
                 // Calculate the right edge X coordinate.
                 const pipeRight = pipe.x + pipe.width;
 
-                // Perform the AABB collision check: true if the bird's box overlaps the pipe's box.
-                // Checks if bird's right is past pipe's left AND bird's left is before pipe's right (horizontal overlap).
-                if (birdRight > pipeLeft &&
-                    birdLeft < pipeRight &&
-                    // AND Checks if bird's bottom is below pipe's top AND bird's top is above pipe's bottom (vertical overlap).
-                    birdBottom > pipeTop &&
-                    birdTop < pipeBottom) {
+                // Perform the AABB collision check: true if the block's box overlaps the pipe's box.
+                // Checks if block's right is past pipe's left AND block's left is before pipe's right (horizontal overlap).
+                if (blockRight > pipeLeft &&
+                    blockLeft < pipeRight &&
+                    // AND Checks if block's bottom is below pipe's top AND block's top is above pipe's bottom (vertical overlap).
+                    blockBottom > pipeTop &&
+                    blockTop < pipeBottom) {
                     // If all conditions are true, the boxes overlap, indicating a collision.
                     return true;
                 }
@@ -573,7 +573,7 @@
                 // If yes, update the high score variable.
                 highScore = score;
                 // Save the new high score to the browser's local storage for persistence.
-                localStorage.setItem('flappyBirdHighScore', highScore);
+                localStorage.setItem('flappyblockHighScore', highScore);
             }
 
             // Update the best score displayed on the game over screen.
@@ -593,9 +593,9 @@
 
         // Function to reset the game state to its initial values for a new game.
         function resetGame() {
-            // Reset bird's vertical position and velocity.
-            bird.y = 300;
-            bird.velocity = 0;
+            // Reset block's vertical position and velocity.
+            block.y = 300;
+            block.velocity = 0;
             // Clear the array of pipes.
             pipes = [];
             // Reset the pipe pair ID counter.
@@ -620,7 +620,7 @@
             gameOverScreen.style.display = 'none';
             // Clear the canvas completely.
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Redraw the initial state (bird at start, score 0, etc.).
+            // Redraw the initial state (block at start, score 0, etc.).
             render();
             // Set text color and font for the starting instruction.
             ctx.fillStyle = '#000';
@@ -660,17 +660,17 @@
             // toggleNotes(false);
         }
 
-        // Function to handle the bird's jump action.
-        function birdJump() {
+        // Function to handle the block's jump action.
+        function blockJump() {
              // If the game hasn't started yet (first jump), start the game loop.
              if (!gameRunning && !gameOver) {
                  // Call the function to initiate the main game loop.
                  startGameLoop();
              }
-             // If the game is not over, apply the jump force to the bird's velocity.
+             // If the game is not over, apply the jump force to the block's velocity.
              if (!gameOver) {
-                 // Set the bird's vertical velocity to the negative jump force (upward movement).
-                 bird.velocity = bird.jumpForce;
+                 // Set the block's vertical velocity to the negative jump force (upward movement).
+                 block.velocity = block.jumpForce;
              }
         }
 
@@ -680,8 +680,8 @@
             document.addEventListener('keydown', (e) => {
                 // Check if the Space bar was pressed and the notes input is not active.
                 if (e.code === 'Space' && !notesActive) {
-                    // Trigger the bird's jump action.
-                    birdJump();
+                    // Trigger the block's jump action.
+                    blockJump();
                     // Prevent the default Space bar action (e.g., scrolling the page).
                     e.preventDefault();
                 }
@@ -722,8 +722,8 @@
             canvas.addEventListener('click', () => {
                 // Allow jumping via click only if notes are not active and game is not over.
                 if (!notesActive && !gameOver) {
-                    // Trigger the bird's jump action.
-                    birdJump();
+                    // Trigger the block's jump action.
+                    blockJump();
                 }
                 // Optional: Uncomment to allow restarting the game by clicking when game is over.
                 // if (gameOver) {
